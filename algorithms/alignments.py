@@ -14,25 +14,37 @@ class Alignment:
         alignment_matrix[1:, 0] = np.array([mismatch * j for j in range(1, m)])
         return alignment_matrix
 
+    @staticmethod
+    def _make_backward_precursors(m, n):
+        backward_pass = {(0, 0): 0}
+        for i in range(n - 1, 0, -1):
+            backward_pass[(0, i)] = 2
+
+        for j in range(m - 1, 0, -1):
+            backward_pass[(j, 0)] = 1
+
+        return backward_pass
+
+    def _decision(self, number, row, col):
+        decisions = {
+            0: lambda row, col: (self.sequence_1[col - 1], self.sequence_2[row - 1], row - 1, col - 1),
+            # MATCH/MISMATCH
+            1: lambda row, col: ("_", self.sequence_2[row - 1], row - 1, col),  # gap in upper sequence
+            2: lambda row, col: (self.sequence_1[col - 1], "_", row, col - 1),  # gap in lower sequence
+        }
+
+        return decisions[number](row, col)
+
+    def _compute_backward_pass(self, backward_dict, final_row, final_column):
+
+
     def align_needleman_wunsch(self, match=1, mismatch=-1, gap=-1):
         n = len(self.sequence_1) + 1
         m = len(self.sequence_2) + 1
         upper_alignment = []
         lower_alignment = []
 
-        decisions = {
-            0: lambda row_, col: (self.sequence_1[col - 1], self.sequence_2[row_ - 1], row_ - 1, col - 1),  # MATCH/MISMATCH
-            1: lambda row_, col: ("_", self.sequence_2[row_ - 1], row_ - 1, col),  # gap in upper sequence
-            2: lambda row_, col: (self.sequence_1[col - 1], "_", row_, col - 1),  # gap in lower sequence
-        }
-
-        backward_pass = {(0, 0): 0}  # decision
-
-        for i in range(n - 1, 0, -1):
-            backward_pass[(0, i)] = 2
-
-        for j in range(m - 1, 0, -1):
-            backward_pass[(j, 0)] = 1
+        backward_pass = self._make_backward_precursors(m, n)  # decision
 
         alignment_matrix = self._make_alignment_matrix(m, n, mismatch)
 
@@ -49,11 +61,11 @@ class Alignment:
 
                 backward_pass[row, column] = decision
 
-        upper_symbol, lower_symbol, i, j = decisions[decision](row, column)
+        upper_symbol, lower_symbol, i, j = self._decision(decision, row, column)
         while all((i >= 0, j >= 0)):
             upper_alignment.append(upper_symbol)
             lower_alignment.append(lower_symbol)
-            upper_symbol, lower_symbol, i, j = decisions[backward_pass[(i, j)]](i, j)
+            upper_symbol, lower_symbol, i, j = self._decision([backward_pass[(i, j)]], i, j)
 
         return f"{''.join(reversed(upper_alignment))} {''.join(reversed(lower_alignment))}"
 
