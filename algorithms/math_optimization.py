@@ -1,4 +1,4 @@
-def fastpow(a: float, n: int):
+def fastpow(a: (float, int), n: int) -> (float, int):
     if n == 0:
         return 1
     elif n % 2 == 1:
@@ -6,8 +6,9 @@ def fastpow(a: float, n: int):
     else:
         return fastpow(a ** 2, n // 2)
 
+
 def gcd(a, b):
-    return a if b == 0 else gcd(b, a % b )
+    return a if b == 0 else gcd(b, a % b)
 
 
 def fib(n):
@@ -31,8 +32,8 @@ def primes(n):
 
 
 if __name__ == '__main__':
-    print(fpow(3, 7))
-    print(fpow(2, 4))
+    print(fastpow(3, 7))
+    print(fastpow(2, 4))
 
     print(fib(2))
     print(fib(21))
