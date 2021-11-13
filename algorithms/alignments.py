@@ -102,19 +102,19 @@ class Alignment:
         alignment_tensor = np.ndarray(shape=(3, m, n), buffer=np.zeros((3, m, n)), dtype=int)
 
         alignment_tensor[0, 1, 0] = gap_start_penalty + gap_prolong_penalty  # TODO is this right?
-        alignment_tensor[1, 1, 0] = alignment_tensor[2, 1, 0] = -1000
+        alignment_tensor[1, 1, 0] = alignment_tensor[2, 1, 0] = -9999
 
         for row in range(2, m):
             alignment_tensor[0, row, 0] = alignment_tensor[0, row - 1, 0] + gap_prolong_penalty
-            alignment_tensor[1, row, 0] = -1000
-            alignment_tensor[2, row, 0] = -1000
+            alignment_tensor[1, row, 0] = -9999
+            alignment_tensor[2, row, 0] = -9999
 
         alignment_tensor[2, 0, 1] = gap_start_penalty + gap_prolong_penalty  # TODO is this right?
-        alignment_tensor[0, 0, 1] = alignment_tensor[1, 0, 1] = -1000
+        alignment_tensor[0, 0, 1] = alignment_tensor[1, 0, 1] = -9999
         for column in range(2, n):
             alignment_tensor[2, 0, column] = alignment_tensor[2, 0, column - 1] + gap_prolong_penalty
-            alignment_tensor[1, 0, column] = -1000
-            alignment_tensor[0, 0, column] = -1000
+            alignment_tensor[1, 0, column] = -9999
+            alignment_tensor[0, 0, column] = -9999
 
         return alignment_tensor
 
@@ -129,7 +129,7 @@ class Alignment:
         #     backward_decisions[0, i, 0] = 0
 
         for j in range(1, n):
-            backward_decisions[2, 0, j] = 6
+            backward_decisions[2, 0, j] = 8
 
         return backward_decisions
 
@@ -153,14 +153,16 @@ class Alignment:
         decisions = {
             0: lambda row_idx, column_idx: ("_", self.sequence_2[row_idx - 1], 0, row_idx - 1, column_idx),
             1: lambda row_idx, column_idx: ("_", self.sequence_2[row_idx - 1], 1, row_idx - 1, column_idx),
-            2: lambda row_idx, column_idx: (
-                self.sequence_1[column_idx - 1], self.sequence_2[row_idx - 1], 0, row_idx - 1, column_idx - 1),
+            2: lambda row_idx, column_idx: ("_", self.sequence_2[row_idx - 1], 2, row_idx - 1, column_idx),
             3: lambda row_idx, column_idx: (
-                self.sequence_1[column_idx - 1], self.sequence_2[row_idx - 1], 1, row_idx - 1, column_idx - 1),
+                self.sequence_1[column_idx - 1], self.sequence_2[row_idx - 1], 0, row_idx - 1, column_idx - 1),
             4: lambda row_idx, column_idx: (
+                self.sequence_1[column_idx - 1], self.sequence_2[row_idx - 1], 1, row_idx - 1, column_idx - 1),
+            5: lambda row_idx, column_idx: (
                 self.sequence_1[column_idx - 1], self.sequence_2[row_idx - 1], 2, row_idx - 1, column_idx - 1),
-            5: lambda row_idx, column_idx: (self.sequence_1[column_idx - 1], "_", 1, row_idx, column_idx - 1),
-            6: lambda row_idx, column_idx: (self.sequence_1[column_idx - 1], "_", 2, row_idx, column_idx - 1),
+            6: lambda row_idx, column_idx: (self.sequence_1[column_idx - 1], "_", 0, row_idx, column_idx - 1),
+            7: lambda row_idx, column_idx: (self.sequence_1[column_idx - 1], "_", 1, row_idx, column_idx - 1),
+            8: lambda row_idx, column_idx: (self.sequence_1[column_idx - 1], "_", 2, row_idx, column_idx - 1),
         }
 
         return decisions[decision_code](row_index, column_index)
@@ -181,27 +183,25 @@ class Alignment:
                 steps_for_T = (
                     alignment_tensor[0, row_index - 1, column_index] + gap_prolong_penalty,
                     alignment_tensor[1, row_index - 1, column_index] + gap_start_penalty + gap_prolong_penalty,
-                )  # TODO make it correct
+                    alignment_tensor[2, row_index - 1, column_index] + gap_start_penalty + gap_prolong_penalty)
                 weight_matrix_score = self.matrix[seq_1_symbol_code, seq_2_symbol_code]
                 steps_for_S = (
                     alignment_tensor[0, row_index - 1, column_index - 1] + weight_matrix_score,
                     alignment_tensor[1, row_index - 1, column_index - 1] + weight_matrix_score,
-                    alignment_tensor[2, row_index - 1, column_index - 1] + weight_matrix_score,
-                )
+                    alignment_tensor[2, row_index - 1, column_index - 1] + weight_matrix_score,)
                 steps_for_U = (
+                    alignment_tensor[0, row_index, column_index - 1] + gap_start_penalty + gap_prolong_penalty,
                     alignment_tensor[1, row_index, column_index - 1] + gap_start_penalty + gap_prolong_penalty,
-                    alignment_tensor[2, row_index, column_index - 1] + gap_prolong_penalty,
-                )  # TODO make it correct
+                    alignment_tensor[2, row_index, column_index - 1] + gap_prolong_penalty,)
 
                 alignment_tensor[0, row_index, column_index] = max(steps_for_T)
                 backward_decisions[0, row_index, column_index] = np.argmax(steps_for_T)
 
                 alignment_tensor[1, row_index, column_index] = max(steps_for_S)
-                backward_decisions[1, row_index, column_index] = np.argmax(
-                    steps_for_S) + 2  # to create general 7 decisions
+                backward_decisions[1, row_index, column_index] = np.argmax(steps_for_S) + 3  # to create general 7 decisions
 
                 alignment_tensor[2, row_index, column_index] = max(steps_for_U)
-                backward_decisions[2, row_index, column_index] = np.argmax(steps_for_U) + 5
+                backward_decisions[2, row_index, column_index] = np.argmax(steps_for_U) + 6
 
         max_score_matrix = np.argmax((alignment_tensor[0, -1, -1], alignment_tensor[1, -1, -1],
                                       alignment_tensor[2, -1, -1]))
@@ -221,7 +221,7 @@ class Alignment:
             3: lambda row, col: (self.sequence_1[col - 1], "_", row, col - 1),  # gap in lower sequence
         }
 
-        return decisions
+        return decisions[decision](row_index, column_index)
 
     @staticmethod
     def _make_local_alignment_matrix_backward_decisions(m, n, gap):
@@ -274,12 +274,12 @@ class Alignment:
                 weight_score = self.matrix[seq_1_symbol_code, seq_2_symbol_code]
                 previous_decisions = (
                     0,
-                    alignment_matrix[row_index - 1, column_index - 1] + weight_score,
-                    alignment_matrix[row_index, column_index - 1] + gap_penalty,
-                    alignment_matrix[row_index - 1, column_index] + gap_penalty,
+                    alignment_matrix[row_index-1, column_index-1] + weight_score,
+                    alignment_matrix[row_index-1, column_index] + gap_penalty,  # gap in upper
+                    alignment_matrix[row_index, column_index-1] + gap_penalty,  # gap in lower
                 )
 
-                alignment_matrix[row_index, column_index] = np.max(previous_decisions)
+                alignment_matrix[row_index, column_index] = max(previous_decisions)
 
                 current_decision = np.argmax(previous_decisions)
                 backward_decisions[row_index, column_index] = current_decision
@@ -296,8 +296,8 @@ class Alignment:
             max_column_idx,
             initial_decision)
 
-        upper_residual_right = self.sequence_1[max_column_idx + 1:].lower()
-        lower_residual_right = self.sequence_2[max_row_idx + 1:].lower()
+        upper_residual_right = self.sequence_1[max_column_idx:].lower()
+        lower_residual_right = self.sequence_2[max_row_idx:].lower()
         upper_alignment = ''.join((upper_residual_left, upper_sub_sequence, upper_residual_right))
         lower_alignment = ''.join((lower_residual_left, lower_sub_sequence, lower_residual_right))
         return alignment_score, f"{upper_alignment} {lower_alignment}"
@@ -314,9 +314,9 @@ def build_weight_matrix(array, alphabet="ACGT"):  # TODO for proteins
 
 
 if __name__ == '__main__':
-    # seq_1, seq_2, match_score, mismatch_score, open_gap_score, prolong_gap_score = "ATGC", "ATGC", -1, -1, 1, 0
-    # aligner = Alignment(seq_1, seq_2, (match_score, mismatch_score))
-    # print(*aligner.affine_gaps_manhattan(gap_start_penalty=open_gap_score, gap_prolong_penalty=prolong_gap_score))
-    seq_1, seq_2, match, mismatch, gap = "TGTTACGG", "GGTTGACTA", 1, -1, -1
-    aligner = Alignment(seq_1, seq_2, (match, mismatch))
-    print(aligner.local_smith_waterman(gap))
+    seq_1, seq_2, match_score, mismatch_score, open_gap_score, prolong_gap_score = "ATGC", "ATGC", -1, -1, 1, 0
+    aligner = Alignment(seq_1, seq_2, (match_score, mismatch_score))
+    print(*aligner.affine_gaps_manhattan(gap_start_penalty=open_gap_score, gap_prolong_penalty=prolong_gap_score))
+    # seq_1, seq_2, match, mismatch, gap = "TGTTACGG", "GGTTGACTA", 1, -1, -1
+    # aligner = Alignment(seq_1, seq_2, (match, mismatch))
+    # print(*aligner.local_smith_waterman(gap))
