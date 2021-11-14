@@ -42,11 +42,10 @@ class PhylTree:
             self.nodes[letter_i].distance = new_distance_i - self.nodes[letter_i].cumulative_distance
             self.nodes[letter_j].distance = new_distance_j - self.nodes[letter_j].cumulative_distance
 
-
-            cumulative_distance =
+            cumulative_distance = new_distance_i
             self.nodes[new_node_name] = Node(letter=new_node_name, left=self.nodes[letter_i],
                                              right=self.nodes[letter_j],
-                                             cumulative_distance=cumulative_distance+new_distance_i)
+                                             cumulative_distance=cumulative_distance)
 
             self.nodes[letter_i].parent = self.nodes[letter_j].parent = self.nodes[new_node_name]
 
@@ -63,7 +62,8 @@ class PhylTree:
 
             for letter in set(letter2num) - {letter_i, letter_j}:
                 temp_dist_dict[(letter, new_node_name)] = temp_dist_dict[(new_node_name, letter)] = (
-                    (cluster_i * matrix[letter2num[letter], letter2num[letter_i]] + cluster_j * matrix[letter2num[letter], letter2num[letter_j]])/cluster_size)
+                        (cluster_i * matrix[letter2num[letter], letter2num[letter_i]] + cluster_j * matrix[
+                            letter2num[letter], letter2num[letter_j]]) / cluster_size)
 
             new_letters = set(letter2num) - {letter_i, letter_j} | {new_node_name}
             letter2num = dict(zip(new_letters, range(len(new_letters))))
@@ -77,6 +77,8 @@ class PhylTree:
         else:
             self.root = self.nodes[new_node_name]
 
+    def upgma(self, score):
+        self.wpgma(score=score, clusters=True)
 
     def neighbor_joining(self):
         pass
@@ -103,8 +105,9 @@ class PhylTree:
 
 
 def test():
-    A = PhylTree(leaves_amount=5, score=[17, 21, 31, 23, 30, 34, 21, 28, 39, 43])
+    # A = PhylTree(leaves_amount=5, score=[17, 21, 31, 23, 30, 34, 21, 28, 39, 43])
     # A = PhylTree(leaves_amount=4, score=[16, 16, 10, 8, 8, 4])
+    A = PhylTree(leaves_amount=5, score=[5, 9, 9, 8, 10, 10, 9, 8, 7, 3])
     A.wpgma(A.score)
     print(A)
 
@@ -121,4 +124,3 @@ def homework_finite_machine(input_string):
 
 if __name__ == '__main__':
     test()
-
