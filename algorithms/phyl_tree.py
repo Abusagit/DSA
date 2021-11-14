@@ -4,16 +4,14 @@ import sys
 
 
 class Node:
-    def __init__(self, letter, distance=None, parent=None, depth=-1, left=None, right=None, cumulative_distance=0,
-                 clusters=False):
+    def __init__(self, letter, distance=None, parent=None, left=None, right=None,
+                 cumulative_distance=0):
         self.letter = letter
         self.distance = distance
         self.parent = parent
-        self.depth = depth
         self.left = left
         self.right = right
         self.cumulative_distance = cumulative_distance
-        self.cluster_size = 1 if not clusters else len(self.letter)
 
     def is_leaf(self):
         return all((not self.right, not self.left))
@@ -44,9 +42,11 @@ class PhylTree:
             self.nodes[letter_i].distance = new_distance_i - self.nodes[letter_i].cumulative_distance
             self.nodes[letter_j].distance = new_distance_j - self.nodes[letter_j].cumulative_distance
 
+
+            cumulative_distance =
             self.nodes[new_node_name] = Node(letter=new_node_name, left=self.nodes[letter_i],
                                              right=self.nodes[letter_j],
-                                             cumulative_distance=self.nodes[letter_j].cumulative_distance + new_distance_i)
+                                             cumulative_distance=cumulative_distance+new_distance_i)
 
             self.nodes[letter_i].parent = self.nodes[letter_j].parent = self.nodes[new_node_name]
 
@@ -57,9 +57,13 @@ class PhylTree:
                     letter2num[node_name_2]
                 ]
 
+            cluster_i = 1 if not clusters else len(letter_i)
+            cluster_j = 1 if not clusters else len(letter_j)
+            cluster_size = cluster_i + cluster_j
+
             for letter in set(letter2num) - {letter_i, letter_j}:
                 temp_dist_dict[(letter, new_node_name)] = temp_dist_dict[(new_node_name, letter)] = (
-                    (matrix[letter2num[letter], letter2num[letter_i]] + matrix[letter2num[letter], letter2num[letter_j]])/2)
+                    (cluster_i * matrix[letter2num[letter], letter2num[letter_i]] + cluster_j * matrix[letter2num[letter], letter2num[letter_j]])/cluster_size)
 
             new_letters = set(letter2num) - {letter_i, letter_j} | {new_node_name}
             letter2num = dict(zip(new_letters, range(len(new_letters))))
@@ -99,7 +103,8 @@ class PhylTree:
 
 
 def test():
-    A = PhylTree(leaves_amount=5, score=[5, 9, 9, 8, 10, 10, 9, 8, 7, 3])
+    A = PhylTree(leaves_amount=5, score=[17, 21, 31, 23, 30, 34, 21, 28, 39, 43])
+    # A = PhylTree(leaves_amount=4, score=[16, 16, 10, 8, 8, 4])
     A.wpgma(A.score)
     print(A)
 
