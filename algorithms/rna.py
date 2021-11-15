@@ -66,12 +66,12 @@ class RNA:
                 else:
                     backward_pass_array[(i, j)] = max_from_previous_combinations[0]
                     nussinov_matrix[i, j] = max_from_previous_combinations[1]
-
+        print(nussinov_matrix)
         secondary_connections = self._compute_backward_pass(backward_pass_array, initial_second_coordinate=n - 1)
 
         return ' '.join(f"{i} {j}" for i, j in secondary_connections)
 
 
 if __name__ == '__main__':
-    a = RNA("AAGGGUUGGAAC")
+    a = RNA("CCCUUUAG")
     print(a.estimate_secondary_sctructure(min_hairpin_size=2))
